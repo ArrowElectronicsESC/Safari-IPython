@@ -210,7 +210,7 @@ class Serial:
                 
             self.channels[channel]["voltages"].append(self.channels[channel]["voltage_format_func"](float(voltage)))
             self.channels[channel]["values"].append(self.channels[channel]["value_conversion_func"](float(voltage), float(code)))
-            self.channels[channel]["timestamps"].append(datetime.datetime.utcnow().strftime('%M:%S.%f')[:-4])
+            self.channels[channel]["timestamps"].append(datetime.datetime.utcnow().strftime('%S.%f')[:-3])
 
             # Limit lists to the max elements value
             self.channels[channel]["timestamps"] = self.channels[channel]["timestamps"][-self.channels[channel]["max_elements"]:]
@@ -218,7 +218,8 @@ class Serial:
             self.channels[channel]["values"] = self.channels[channel]["values"][-self.channels[channel]["max_elements"]:]
 
         except Exception as e:
-            logging.exception(e)
+            # Occasionally the serial port will not read the complete string. We are ignoring these errors for now
+            #logging.exception(e)
             pass
             
     def on_serial_port_change(self, change):
@@ -282,6 +283,9 @@ class Serial:
         :return: Nothing
         """        
         self.data_collection_running = True
+        self.serial.write("echo 100 > /sys/class/gpio/export\n".encode('utf-8'))
+        self.serial.write("echo out > /sys/class/gpio/gpio100/direction\n".encode('utf-8'))
+        self.serial.write("echo 1 > /sys/class/gpio/gpio100/value\n".encode('utf-8'))
         self.serial.write("python /root/python/safari.py\n".encode('utf-8'))
 
     def data_collection_stop(self):
@@ -291,6 +295,9 @@ class Serial:
         """
         self.data_collection_running = False
         self.__serial_ctrl_c()
+        self.serial.write("echo 100 > /sys/class/gpio/export\n".encode('utf-8'))
+        self.serial.write("echo out > /sys/class/gpio/gpio100/direction\n".encode('utf-8'))
+        self.serial.write("echo 0 > /sys/class/gpio/gpio100/value\n".encode('utf-8'))
         
     # Function for starting the motor
     def data_collection_start_stop(self):
