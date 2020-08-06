@@ -8,10 +8,21 @@ from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
 import matplotlib.pyplot as plt
 import numpy as np
 
+from IPython.display import display, Markdown, clear_output, Image, HTML
+import ipywidgets as widgets
+from ipywidgets import interact, interact_manual, Layout, Box, Button, Label, FloatText, Textarea, Dropdown, IntText
+
 class Data:   
     def __init__(self, channels):
         self.channels = channels
-        self.update_interval = 1  # Time (ms) between polling/animation updates 
+        self.update_interval = 1  # Time (ms) between polling/animation updates
+        
+        self.units = 'Voltage'
+        # conversion radio button widget
+        self.conversion_button = widgets.RadioButtons(description = 'Data Format',
+                                                     options=['Voltage', 'Converted'],
+                                                     disabled=False)
+        display(widgets.HBox([self.conversion_button]))
 
         self.nplots = len(channels)
         self.plot_title_fontsize = 12
@@ -19,7 +30,7 @@ class Data:
         self.tick_count = 5
         self.props = dict(boxstyle='round', facecolor='wheat', alpha=0.5)
 
-        self.fig, axs = plt.subplots(self.nplots, 1, figsize=(8, 8))
+        self.fig, axs = plt.subplots(self.nplots, 1, figsize=(8, 8), sharex='col')
         for channel in self.channels:
             if self.nplots <= 1:
                 self.channels[channel]["axis"] = axs
@@ -30,6 +41,7 @@ class Data:
             self.channels[channel]["axis"].set_title(self.channels[channel]["plot_title"], fontsize=12)
             self.channels[channel]["axis"].set_ylabel(self.channels[channel]["y_label"], color=self.channels[channel]["axes_color"])
             self.channels[channel]["axis"].tick_params(axis='y', labelcolor=self.channels[channel]["axes_color"])
+            self.channels[channel]["axis"].xaxis.set_tick_params(labelbottom=True)
             self.channels[channel]["axis"].xaxis.set_major_locator(plt.MaxNLocator(self.tick_count))
             self.channels[channel]["annotation"] = self.channels[channel]["axis"].annotate("", xy=(0, 0), xytext=(-20, 20),
                                                                                            textcoords="offset points",
@@ -75,44 +87,53 @@ class Data:
         for channel in self.channels:
             self.channels[channel]["axis"].clear()
             self.channels[channel]["axis"].set_title(self.channels[channel]["plot_title"], fontsize=12)
-            self.channels[channel]["axis"].set_ylabel(self.channels[channel]["y_label"], color=self.channels[channel]["axes_color"])
             self.channels[channel]["axis"].yaxis.set_major_formatter(FormatStrFormatter('%.4f'))
             self.channels[channel]["axis"].xaxis.set_major_locator(plt.MaxNLocator(self.tick_count))
 
             try:
-                if len(self.channels[channel]["voltages"]) > 0:
-                    self.channels[channel]["axis"].plot(self.channels[channel]["timestamps"], 
-                                                        self.channels[channel]["voltages"], 
-                                                        color=self.channels[channel]["axes_color"])
-                    self.channels[channel]["line"] = self.channels[channel]["axis"].get_lines()[0]
-                    self.channels[channel]["annotation"] = self.channels[channel]["axis"].annotate("", xy=(0, 0), 
-                                                                                                   xytext=(-20, 20), 
-                                                                                                   textcoords="offset points",
-                                                                                                   bbox=dict(boxstyle="round", 
-                                                                                                             fc="w"),
-                                                                                                   arrowprops=dict(arrowstyle="->"))
-                    self.channels[channel]["annotation"].set_visible(self.channels[channel]["annotation_visible"])
-                    self.channels[channel]["annotation"].xy = self.channels[channel]["annot_ax_xy"]
-                    self.channels[channel]["annotation"].set_text(self.channels[channel]["annotation_text"])
-                    self.channels[channel]["annotation"].get_bbox_patch().set_alpha(0.4)
-                    try:
-                        ax_min = min(self.channels[channel]["voltages"])
-                        ax_mean = sum(self.channels[channel]["voltages"]) / len(self.channels[channel]["voltages"])
-                        ax_max = max(self.channels[channel]["voltages"])
-                        ax_last = self.channels[channel]["voltages"][-1]
-                        ax_annotation = '\n'.join((
-                            r'Max=%.4f' % (ax_max,),
-                            r'Mean=%.4f' % (ax_mean,),
-                            r'Min=%.4f' % (ax_min,),
-                            r'Last=%.4f' % (ax_last,)))
+                if ((self.conversion_button.value == 'Voltage' and len(self.channels[channel]["voltages"]) > 0) or 
+                    (self.conversion_button.value and len(self.channels[channel]["values"]) > 0)):
+                        if self.conversion_button.value == 'Voltage':
+                            self.channels[channel]["axis"].set_ylabel(self.channels[channel]["y_label"], 
+                                                                      color=self.channels[channel]["axes_color"])
+                            self.channels[channel]["axis"].plot(self.channels[channel]["timestamps"], 
+                                                                self.channels[channel]["voltages"], 
+                                                                color=self.channels[channel]["axes_color"])
+                        else:
+                            self.channels[channel]["axis"].set_ylabel(self.channels[channel]["y_label_converted"], 
+                                                                      color=self.channels[channel]["axes_color"])
+                            self.channels[channel]["axis"].plot(self.channels[channel]["timestamps"], 
+                                                                self.channels[channel]["values"], 
+                                                                color=self.channels[channel]["axes_color"])
+                        self.channels[channel]["line"] = self.channels[channel]["axis"].get_lines()[0]
+                        self.channels[channel]["annotation"] = self.channels[channel]["axis"].annotate("", xy=(0, 0), 
+                                                                                                       xytext=(-20, 20), 
+                                                                                                       textcoords="offset points",
+                                                                                                       bbox=dict(boxstyle="round", 
+                                                                                                                 fc="w"),
+                                                                                                       arrowprops=dict(arrowstyle="->"))
+                        self.channels[channel]["annotation"].set_visible(self.channels[channel]["annotation_visible"])
+                        self.channels[channel]["annotation"].xy = self.channels[channel]["annot_ax_xy"]
+                        self.channels[channel]["annotation"].set_text(self.channels[channel]["annotation_text"])
+                        self.channels[channel]["annotation"].get_bbox_patch().set_alpha(0.4)
+                        try:
+                            ax_min = min(self.channels[channel]["voltages"])
+                            ax_mean = sum(self.channels[channel]["voltages"]) / len(self.channels[channel]["voltages"])
+                            ax_max = max(self.channels[channel]["voltages"])
+                            ax_last = self.channels[channel]["voltages"][-1]
+                            ax_annotation = '\n'.join((
+                                r'Max=%.4f' % (ax_max,),
+                                r'Mean=%.4f' % (ax_mean,),
+                                r'Min=%.4f' % (ax_min,),
+                                r'Last=%.4f' % (ax_last,)))
 
-                        self.channels[channel]["axis"].text(1.01, 0.7, ax_annotation, 
-                                                            transform=self.channels[channel]["axis"].transAxes, 
-                                                            fontsize=10, verticalalignment='top', bbox=self.props)
-                    except ValueError:
-                        print("Dimension Error")
-                        print(f'Timestamps Len: {len(self.channels[channel]["timestamps"])}')
-                        print(f'Voltages Len: {len(self.channels[channel]["voltages"])}')
+                            self.channels[channel]["axis"].text(1.01, 0.7, ax_annotation, 
+                                                                transform=self.channels[channel]["axis"].transAxes, 
+                                                                fontsize=10, verticalalignment='top', bbox=self.props)
+                        except ValueError:
+                            print("Dimension Error")
+                            print(f'Timestamps Len: {len(self.channels[channel]["timestamps"])}')
+                            print(f'Voltages Len: {len(self.channels[channel]["voltages"])}')
 
             except Exception as e:
                 logging.exception(e)
