@@ -184,7 +184,6 @@ class Serial:
                         elif "AD7124 error" in self.serial_buffer:
                             self.__serial_ctrl_c()
                         elif "channel" in self.serial_buffer \
-                                and "timestamp" in self.serial_buffer \
                                 and "voltage" in self.serial_buffer \
                                 and "code" in self.serial_buffer:
                                     self.update_plot_data(self.serial_buffer)
@@ -206,7 +205,10 @@ class Serial:
         """
         try:
             p = re.compile(r'[-+]?\d*\.\d+|\d+')
-            channel, timestamp, voltage, code = p.findall(data_string)
+            if "timestamp" in data_string:
+                channel, timestamp, voltage, code = p.findall(data_string)
+            else:
+                channel, voltage, code = p.findall(data_string)
                 
             self.channels[channel]["voltages"].append(self.channels[channel]["voltage_format_func"](float(voltage)))
             self.channels[channel]["values"].append(self.channels[channel]["value_conversion_func"](float(voltage), float(code)))

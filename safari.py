@@ -7,51 +7,8 @@ import logging
 
 
 ########################################################################################################################
-#                                            Global Variables                                                          #
-########################################################################################################################
-ACCELEROMETER_CHANNEL = 0       # Channel connected to accelerometer
-TEMPERATURE_CHANNEL = 4         # Channel connected to RTD temperature sensor
-PRESSURE_CHANNEL = 6            # Channel connected to differential pressure sensor
-ALERT_THRESHOLD_VOLTAGE = 2.0   # Voltage threshold for detecting a fault condition
-
-
-########################################################################################################################
 #                                            Support Functions                                                         #
 ########################################################################################################################
-
-
-def convert_pressure(voltage):
-    ''' Convert the supplied voltage to Pascals
-
-    :param voltage: Voltage to convert
-    :return: Pressure measured in Pascals (Pa)
-
-
-    DP = (190 * Vmeas)/Vdd - 38Pa
-    Example:
-    Vmeas = 875mV, Vdd = 3.3V
-    Differential Pressure = (190 * 0.875V)/3.3V - 38Pa = 12.37Pa
-    '''
-    vdd = 3.3
-    r1 = 132000
-    r2 = 100000
-    return round(((190.0 * voltage * (r1/r2)) / vdd - 38), 3)
-
-
-def convert_temperature(code):
-    ''' Convert the supplied code to temperature
-
-    :param code: Raw ADC value received from AD7124
-    :return: Temperature in degrees Celsius.
-
-
-    RTD Resistance = (Code * 5.11kOhms) / ((2^24) * 16)
-    Temperature (Degrees C) = (RTD Resistance - 100ohms) / (0.385 ohms/degC)
-    '''
-    r_rtd = (code * 5110) / ((2**24) * 16)
-    temp = (r_rtd - 100) / 0.385
-    return round(temp, 3)
-
 
 # Function for reading data from the AD7124 sensor
 def ad7124_read_data():
@@ -95,20 +52,8 @@ def ad7124_read_data():
     # Convert the raw ADC value (Code) to a voltage
     voltage = ad7124.convert_raw_value(adc_raw_value, polarity, vref, gain)
 
-    # We always want to send the accelerometer data across the serial connection and never to the cloud.
-    # This is done to limit the amount of data sent to the cloud.
-    if channel == ACCELEROMETER_CHANNEL:
-        print('channel,{},timestamp,{},voltage,{},code,{}'
-              .format(channel, int(round(time.time() * 1000000)), voltage, adc_raw_value))
-    elif channel == TEMPERATURE_CHANNEL:
-        print('channel,{},timestamp,{},voltage,{},code,{}'
-              .format(channel, int(round(time.time() * 1000000)), voltage, adc_raw_value))
-    elif channel == PRESSURE_CHANNEL:
-        print('channel,{},timestamp,{},voltage,{},code,{}'
-              .format(channel, int(round(time.time() * 1000000)), voltage, adc_raw_value))
-    else:
-        print('channel,{},timestamp,{},voltage,{},code,{}'
-              .format(channel, int(round(time.time() * 1000000)), voltage, adc_raw_value))
+    # Send the data across the serial connection
+    print('channel,{},voltage,{},code,{}'.format(channel, voltage, adc_raw_value))
 
 
 ########################################################################################################################
