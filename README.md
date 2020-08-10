@@ -34,13 +34,18 @@ You can [download](https://github.com/ArrowElectronicsESC/Safari-IPython/archive
 
 # Start Jupyter Notebook
 1. After the Safari environment has been imported, Select the **Home** tab
+![Anaconda Home](/images/anaconda_safari_home.png)
 2. Ensure the **Applications on** dropwodwn menu is set to **Safari**
 ![Applications On](/images/anaconda_safari_home_apps.png)
 3. Find the Jupyter Notebook application and select **Launch**
 ![Jupyter Launch](/images/anaconda_safari_jupyter_launch.png)
+4. Jupyter will launch a web browser and allow you to run IPython notebooks
+![Jupyter Running](/images/jupyter_running.png)
 
 # Running the Notebook
 1. With Jupyter Notebook running, navigate to the location of Safari_IPython.ipynb, which was downloaded/cloned with this repository.
 2. Click the filename **Safari_IPython.ipynb** to launch the notebook.
     - The notebook should open in a new tab
+![Notebook Select](/images/safari_directory.png)
 3. You are now ready to run the Safari application
+![Notebook Running](/images/safari_notebook_running.png)
